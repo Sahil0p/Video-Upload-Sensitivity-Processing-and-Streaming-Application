@@ -113,38 +113,69 @@ const app = express();
 //   })
 // );
 
+// const allowedOrigins = [
+//     "http://localhost:5173",
+//     "http://127.0.0.1:5173",
+//     process.env.FRONTEND_URL,
+//   ].filter(Boolean); // removes undefined
+  
+//   app.use(
+//     cors({
+//       origin: (origin, cb) => {
+//         // Allow non-browser requests (Postman, curl, SSR)
+//         if (!origin) return cb(null, true);
+  
+//         // Allow all localhost in dev
+//         if (process.env.NODE_ENV !== "production") {
+//           return cb(null, true);
+//         }
+  
+//         // Production: allow whitelisted origins
+//         if (allowedOrigins.includes(origin)) {
+//           return cb(null, true);
+//         }
+  
+//         console.error("🚫 Blocked by CORS:", origin);
+//         cb(null, false); // DO NOT throw error (important)
+//       },
+//       credentials: true,
+//       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+//       allowedHeaders: ["Content-Type", "Authorization"],
+//     })
+//   );
+  
 const allowedOrigins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     process.env.FRONTEND_URL,
-  ].filter(Boolean); // removes undefined
+  ].filter(Boolean);
   
   app.use(
     cors({
       origin: (origin, cb) => {
-        // Allow non-browser requests (Postman, curl, SSR)
+        // Allow server-to-server, Postman, curl
         if (!origin) return cb(null, true);
   
-        // Allow all localhost in dev
+        // Development: allow all
         if (process.env.NODE_ENV !== "production") {
           return cb(null, true);
         }
   
-        // Production: allow whitelisted origins
+        // Production: allow only known frontends
         if (allowedOrigins.includes(origin)) {
           return cb(null, true);
         }
   
-        console.error("🚫 Blocked by CORS:", origin);
-        cb(null, false); // DO NOT throw error (important)
+        console.warn("🚫 CORS blocked:", origin);
+        return cb(null, false); // ❗ DO NOT throw error
       },
       credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
     })
   );
-  
 
+  
 /* =========================
    MIDDLEWARE
    ========================= */
@@ -171,6 +202,12 @@ app.use(
    ========================= */
 app.use("/uploads", express.static("uploads"));
 
+app.use(
+    helmet({
+      crossOriginResourcePolicy: false,
+    })
+  );
+  
 /* =========================
    ROUTES
    ========================= */
