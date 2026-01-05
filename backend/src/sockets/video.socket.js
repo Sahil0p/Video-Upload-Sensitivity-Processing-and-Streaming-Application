@@ -1,22 +1,58 @@
+// import { Server } from "socket.io";
+
+// let io;
+
+// export const initSocket = (server) => {
+//   io = new Server(server, {
+//     cors: { origin: "*" },
+//   });
+
+//   io.on("connection", (socket) => {
+//     console.log("🔌 Socket Connected:", socket.id);
+
+//     socket.on("joinTenant", (tenantId) => {
+//       socket.join(tenantId);
+//       console.log(`👥 Joined Tenant Room: ${tenantId}`);
+//     });
+
+//     socket.on("disconnect", () => {
+//       console.log("❌ Socket Disconnected");
+//     });
+//   });
+// };
+
+// export { io };
+
+// backend/src/sockets/video.socket.js
+
 import { Server } from "socket.io";
+import { env } from "../config/env.js";
 
 let io;
 
 export const initSocket = (server) => {
   io = new Server(server, {
-    cors: { origin: "*" },
+    cors: {
+      origin:
+        env.NODE_ENV === "production"
+          ? env.FRONTEND_URL
+          : ["http://localhost:5173"],
+      credentials: true,
+      methods: ["GET", "POST"],
+    },
+    transports: ["polling"], // ✅ safer for Render
   });
 
   io.on("connection", (socket) => {
     console.log("🔌 Socket Connected:", socket.id);
 
-    socket.on("joinTenant", (tenantId) => {
+    socket.on("join-tenant", (tenantId) => {
       socket.join(tenantId);
-      console.log(`👥 Joined Tenant Room: ${tenantId}`);
+      console.log("👥 Joined Tenant Room:", tenantId);
     });
 
     socket.on("disconnect", () => {
-      console.log("❌ Socket Disconnected");
+      console.log("❌ Socket Disconnected:", socket.id);
     });
   });
 };
