@@ -95,23 +95,55 @@ const app = express();
 /* =========================
    CORS (LOCAL + PRODUCTION)
    ========================= */
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
+// app.use(
+//   cors({
+//     origin: (origin, cb) => {
+//       if (!origin) return cb(null, true);
 
-      const allowed = [
-        "http://localhost:5173",
-        process.env.FRONTEND_URL,
-      ];
+//       const allowed = [
+//         "http://localhost:5173",
+//         process.env.FRONTEND_URL,
+//       ];
 
-      if (allowed.includes(origin)) return cb(null, true);
+//       if (allowed.includes(origin)) return cb(null, true);
 
-      cb(new Error("CORS not allowed"));
-    },
-    credentials: true,
-  })
-);
+//       cb(new Error("CORS not allowed"));
+//     },
+//     credentials: true,
+//   })
+// );
+
+const allowedOrigins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    process.env.FRONTEND_URL,
+  ].filter(Boolean); // removes undefined
+  
+  app.use(
+    cors({
+      origin: (origin, cb) => {
+        // Allow non-browser requests (Postman, curl, SSR)
+        if (!origin) return cb(null, true);
+  
+        // Allow all localhost in dev
+        if (process.env.NODE_ENV !== "production") {
+          return cb(null, true);
+        }
+  
+        // Production: allow whitelisted origins
+        if (allowedOrigins.includes(origin)) {
+          return cb(null, true);
+        }
+  
+        console.error("🚫 Blocked by CORS:", origin);
+        cb(null, false); // DO NOT throw error (important)
+      },
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+    })
+  );
+  
 
 /* =========================
    MIDDLEWARE
