@@ -16,13 +16,24 @@
 
 // const app = express();
 
+// // app.use(
+// //   cors({
+// //     origin: "http://localhost:5173",
+// //     credentials: true,
+// //   })
+// // );
+
 // app.use(
 //     cors({
-//       origin: "http://localhost:5173",
+//       origin: [
+//         "http://localhost:5173",
+//         process.env.FRONTEND_URL
+//       ],
 //       credentials: true,
 //     })
 //   );
   
+
 // app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
 // app.use(cookieParser());
@@ -32,36 +43,36 @@
 // app.use(apiLimiter);
 
 // app.use(
-//     "/api/stream",
-//     helmet({
-//       crossOriginResourcePolicy: false,
-//     })
-//   );
-  
-// // Static video access (optional)
+//   "/api/stream",
+//   helmet({
+//     crossOriginResourcePolicy: false,
+//   })
+// );
+
+// // Static video access
 // app.use("/uploads", express.static("uploads"));
 
-// // Routes
+// // Routes ✅
 // app.use("/api/auth", authRoutes);
 // app.use("/api/videos", videoRoutes);
 // app.use("/api/stream", streamingRoutes);
 // app.use("/api/tenants", tenantRoutes);
+// app.use("/api", adminRoutes); // ✅ MOVE HERE
 
 // // Health Route
 // app.get("/health", (req, res) => {
 //   res.json({ ok: true, service: "Video Platform Backend" });
 // });
 
-// // Not Found
-// app.use((req, res) => res.status(404).json({ message: "Route Not Found" }));
+// // Not Found (ALWAYS LAST)
+// app.use((req, res) =>
+//   res.status(404).json({ message: "Route Not Found" })
+// );
 
-// // Error Handler
+// // Error Handler (ALWAYS LAST)
 // app.use(errorHandler);
 
-// app.use("/api", adminRoutes);
-
 // export default app;
-
 
 import express from "express";
 import cors from "cors";
@@ -81,13 +92,30 @@ import adminRoutes from "./routes/admin.routes.js";
 
 const app = express();
 
+/* =========================
+   CORS (LOCAL + PRODUCTION)
+   ========================= */
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+
+      const allowed = [
+        "http://localhost:5173",
+        process.env.FRONTEND_URL,
+      ];
+
+      if (allowed.includes(origin)) return cb(null, true);
+
+      cb(new Error("CORS not allowed"));
+    },
     credentials: true,
   })
 );
 
+/* =========================
+   MIDDLEWARE
+   ========================= */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -96,6 +124,9 @@ app.use(compression());
 app.use(logger);
 app.use(apiLimiter);
 
+/* =========================
+   STREAMING HEADERS
+   ========================= */
 app.use(
   "/api/stream",
   helmet({
@@ -103,27 +134,37 @@ app.use(
   })
 );
 
-// Static video access
+/* =========================
+   STATIC FILES (UPLOADS)
+   ========================= */
 app.use("/uploads", express.static("uploads"));
 
-// Routes ✅
+/* =========================
+   ROUTES
+   ========================= */
 app.use("/api/auth", authRoutes);
 app.use("/api/videos", videoRoutes);
 app.use("/api/stream", streamingRoutes);
 app.use("/api/tenants", tenantRoutes);
-app.use("/api", adminRoutes); // ✅ MOVE HERE
+app.use("/api", adminRoutes);
 
-// Health Route
-app.get("/health", (req, res) => {
+/* =========================
+   HEALTH CHECK
+   ========================= */
+app.get("/health", (_, res) => {
   res.json({ ok: true, service: "Video Platform Backend" });
 });
 
-// Not Found (ALWAYS LAST)
-app.use((req, res) =>
+/* =========================
+   NOT FOUND
+   ========================= */
+app.use((_, res) =>
   res.status(404).json({ message: "Route Not Found" })
 );
 
-// Error Handler (ALWAYS LAST)
+/* =========================
+   ERROR HANDLER
+   ========================= */
 app.use(errorHandler);
 
 export default app;
